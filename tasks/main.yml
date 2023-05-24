@@ -1,10 +1,6 @@
 ---
 # tasks file for rl_testrole
 
-
----
-# tasks file for rl_install_openjdk
-
 - name: Create a directory for openjdk
   become: true
   ansible.builtin.file:
