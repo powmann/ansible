@@ -1,0 +1,120 @@
+---
+- name: Provision the master node
+  hosts: localhost
+
+  tasks:
+
+    - name: Update cache
+      become: true
+      ansible.builtin.package:
+        update_cache: true
+
+    - name: Install some packages
+      become: true
+      ansible.builtin.package:
+        name:
+          - zsh
+          - git
+          - curl
+          - wget
+          - vim
+          - htop
+          - tree
+          - tmux
+          - yum-utils
+          - dnf-plugins-core
+        state: present
+
+    - name: Set zsh as the default shell
+      become: true
+      ansible.builtin.user:
+        name: "{{ ansible_user_id }}"
+        shell: /bin/zsh
+
+    - name: Get some plugins for oh-my-zsh
+      ansible.builtin.git: # noqa: latest[git]
+        repo: "{{ item.repo }}"
+        dest: "{{ item.dest }}"
+        clone: true
+        update: false
+      loop:
+        - repo: https://github.com/zsh-users/zsh-autosuggestions.git
+          dest: ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+        - repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+          dest: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+
+    - name: Get aphrodite theme for oh-my-zsh
+      ansible.builtin.git: # noqa: latest[git]
+        repo: "{{ item.repo }}"
+        dest: "{{ item.dest }}"
+        clone: true
+        update: false
+      loop:
+        - repo: https://github.com/win0err/aphrodite-terminal-theme.git
+          dest: ~/.oh-my-zsh/custom/themes/aphrodite
+
+    # https://galaxy.ansible.com/ui/standalone/roles/gantsign/oh-my-zsh/documentation/
+    # ansible-galaxy role install gantsign.oh-my-zsh
+    - name: Install oh-my-zsh
+      ansible.builtin.import_role:
+        name: gantsign.oh-my-zsh
+      vars:
+        users:
+          - username: "{{ ansible_user_id }}"
+            oh_my_zsh:
+              theme: aphrodite/aphrodite
+              plugins:
+                - git
+                - ansible
+                - zsh-autosuggestions
+                - zsh-syntax-highlighting
+                - virtualenvwrapper
+                - virtualenv
+              update_mode: auto
+              update_frequency: 10
+
+    - name: Cconfigure PATH
+      ansible.builtin.lineinfile: # noqa: risky-file-permissions
+        path: ~/.zshrc
+        line: "export PATH=$HOME/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
+        create: true
+
+    - name: Make sure pip is installed
+      ansible.builtin.package:
+        name: python3-pip
+        state: present
+      become: true
+
+    - name: Install viertualenv and virtualenvwrapper with pip
+      ansible.builtin.pip:
+        name:
+          - virtualenv
+          - virtualenvwrapper
+        state: present
+
+    # hashicorp gpg key and repo
+    - name: Add hashicorp gpg key
+      ansible.builtin.command: # noqa: command-instead-of-module
+        cmd: "rpm --import https://keybase.io/hashicorp/pgp_keys.asc"
+      changed_when: false
+      become: true
+
+    - name: Add hashicorp repo
+      ansible.builtin.command:
+        cmd: "yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo"
+      changed_when: false
+      become: true
+
+    - name: Update cache
+      ansible.builtin.package:
+        update_cache: true
+      become: true
+
+    # install packer and terraform
+    - name: Install packer
+      ansible.builtin.package:
+        name:
+          - packer
+          - terraform
+        state: present
+      become: true

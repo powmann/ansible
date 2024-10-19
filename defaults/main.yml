@@ -1,9 +1,0 @@
----
-# defaults file for rl_testrole
-app_home: CHANGE_ME
-app_user: CHANGE_ME
-app_group: CHANGE_ME
-openjdk_package: CHANGE_ME
-url_openjdk_bin: CHANGE_ME
-software_repo: CHANGE_ME
-openjdk_version: CHANGE_ME
